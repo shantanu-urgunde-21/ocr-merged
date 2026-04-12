@@ -5,6 +5,8 @@
 
 End-to-end **line-level OCR** in one service: a **PyTorch CRNN** for handwriting (IAM-style training) and **Tesseract** for printed text, behind **FastAPI**, with **full-page preprocessing** (deskew + line segmentation) or **single-line** mode.
 
+I have attached an image in repo trial purpose.
+
 **Portfolio samples:** see [`results/`](results/) for example API response JSON.
 
 ## What I built
