@@ -1,0 +1,19 @@
+{
+  "num_files": 1,
+  "results": [
+    {
+      "file_index": 0,
+      "filename": "printed_page.png",
+      "text": "Invoice #1042\nTotal due: $42.00",
+      "lines": [
+        { "line_index": 0, "text": "Invoice #1042" },
+        { "line_index": 1, "text": "Total due: $42.00" }
+      ],
+      "error": null
+    }
+  ],
+  "concatenated_text": "Invoice #1042\nTotal due: $42.00",
+  "concatenated_lines": ["Invoice #1042", "Total due: $42.00"],
+  "model_used": "tesseract",
+  "preprocessing_mode": "full"
+}

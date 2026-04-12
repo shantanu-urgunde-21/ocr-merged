@@ -1,0 +1,18 @@
+{
+  "num_files": 1,
+  "results": [
+    {
+      "file_index": 0,
+      "filename": "handwritten_line.png",
+      "text": "the quick brown fox",
+      "lines": [
+        { "line_index": 0, "text": "the quick brown fox" }
+      ],
+      "error": null
+    }
+  ],
+  "concatenated_text": "the quick brown fox",
+  "concatenated_lines": ["the quick brown fox"],
+  "model_used": "crnn",
+  "preprocessing_mode": "single_line"
+}

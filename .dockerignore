@@ -1,0 +1,27 @@
+# Git and local env
+.git
+.gitignore
+.env
+.venv
+venv/
+ENV/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# Not needed in image
+tests/
+notebooks/
+results/
+*.md
+!README.md
+
+# Large / optional (mounted at runtime)
+model_weights/
+
+# Dev tooling
+.vscode/
+.idea/
