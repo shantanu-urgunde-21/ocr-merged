@@ -9,7 +9,7 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
     volumes:
-      - ./model_weights:/app/model_weights:ro
+      - ./model_weights:/app/best_model_weights:ro
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]

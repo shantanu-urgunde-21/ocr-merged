@@ -205,22 +205,22 @@ GET /models-info
 ### 3. OCR Prediction
 
 ```
-POST /predict
+POST /ocr
 ```
 
 **Form Parameters:**
 
 ```
-- image (file): Image file (JPEG, PNG)
-- model_type (string): "crnn" or "tesseract" [default: "tesseract"]
+- file (file): Image file (JPEG, PNG)
+- model_type (string): "crnn" or "tesseract" [default: "crnn"]
 - preprocessing_mode (string): "full" (page-level deskew + segmentation) or "single_line" [default: "full"]
 ```
 
 **Example cURL:**
 
 ```bash
-curl -X POST "http://localhost:8000/predict" \
-  -F "image=@sample_image.jpg" \
+curl -X POST "http://localhost:8000/ocr" \
+  -F "file=@sample_image.jpg" \
   -F "model_type=crnn" \
   -F "preprocessing_mode=full"
 ```
@@ -323,8 +323,8 @@ Jupyter notebooks are provided for:
 open http://localhost:8000/docs
 
 # Or use curl
-curl -X POST "http://localhost:8000/predict" \
-  -F "image=@test_image.jpg" \
+curl -X POST "http://localhost:8000/ocr" \
+  -F "file=@test_image.jpg" \
   -F "model_type=tesseract"
 ```
 

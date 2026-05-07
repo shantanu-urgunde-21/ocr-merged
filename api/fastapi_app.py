@@ -4,7 +4,7 @@ Unified OCR API supporting CRNN and Tesseract models
 """
 
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Annotated
 import torch
 from fastapi import FastAPI, File, UploadFile, HTTPException, Query
 from fastapi.responses import JSONResponse
@@ -182,21 +182,20 @@ async def _run_ocr(
         raise HTTPException(status_code=500, detail=f"Processing error: {str(e)}")
 
 
+
+
 @app.post("/ocr", response_model=OCRResponse)
 async def process_ocr(
     model_type: str = Query("crnn", description="'crnn' for handwritten text (default) or 'tesseract' for general text"),
     preprocessing_mode: str = Query("full", description="'full' for deskew + line segmentation or 'single_line' for direct inference"),
-    files: List[UploadFile] = File(
-        ...,
-        description=(
-            "Multiple images: repeat this field (curl: -F files=@a.png -F files=@b.png). "
-            "Swagger UI often shows extra rows as text—use POST /ocr/single for one file from the docs UI."
-        ),
-    ),
+    files: Annotated[List[UploadFile], File(description="Select one or more image files. In Swagger, click 'Add item' then use the file picker.")] = [],
 ):
     """
-    OCR one or more images. Prefer **POST /ocr/single** when testing from Swagger UI with a single file.
+    OCR one or more images. Supports multiple file uploads.
+    If you find the 'Add item' list confusing in Swagger, use **POST /ocr/single** instead.
     """
+    if files is None:
+        raise HTTPException(status_code=400, detail="No files provided")
     return await _run_ocr(files, model_type, preprocessing_mode)
 
 
@@ -206,7 +205,9 @@ async def process_ocr_single(
     preprocessing_mode: str = Query("full", description="'full' or 'single_line'"),
     file: UploadFile = File(..., description="One image file"),
 ):
-    """OCR a single image—reliable file picker in Swagger UI at /docs."""
+    """
+    OCR a single image. Use this if the main /ocr endpoint's multi-file picker is confusing in Swagger UI.
+    """
     return await _run_ocr([file], model_type, preprocessing_mode)
 
 
