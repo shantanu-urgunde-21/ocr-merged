@@ -28,7 +28,7 @@ app = FastAPI(
 
 # Global processor instance (lazy loaded)
 processor: Optional[OCRProcessor] = None
-CRNN_MODEL_PATH = "model_weights/handwriting_recognizer_best.pth"
+CRNN_MODEL_PATH = "best_model_weights/handwriting_recognizer_best.pth"
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
@@ -163,7 +163,7 @@ async def _run_ocr(
         raise HTTPException(
             status_code=503,
             detail=(
-                f"CRNN weights not found. Add handwriting_recognizer_best.pth under model_weights/ "
+                f"CRNN weights not found. Add handwriting_recognizer_best.pth under best_model_weights/ "
                 f"(expected path: {CRNN_MODEL_PATH}). Tesseract does not require this file."
             ),
         )
