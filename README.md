@@ -46,16 +46,6 @@ We have heavily optimized our Docker workflow to create a fast, secure, and prod
 - **No-Install-Recommends**: Used `--no-install-recommends` during Tesseract system setup, preventing bloated language packs and auxiliary packages from being installed.
 - **Zero-PyTorch Mode**: Allowed booting without PyTorch (`DEVICE_TYPE=none`) to run inference purely through C++ optimized ONNX runtime.
 
-### 📊 Container Footprint Breakdown:
-
-| Setup Configuration | Baseline Size | Optimized Size | Space Savings | Primary Engine |
-| :--- | :--- | :--- | :--- | :--- |
-| **GPU / Standard PyTorch** | `~1.8 GB` | **`1.35 GB`** | **`~450 MB`** | PyTorch / CUDA |
-| **CPU Only (Standard)** | `~1.35 GB` | **`895 MB`** | **`~450 MB`** | PyTorch CPU |
-| **Pure ONNX Mode (`none`)** | `~1.1 GB` | **`~300 MB`** | **`~800 MB`** | ONNX Runtime |
-
----
-
 ## 🛠️ Local Installation
 
 ### 1. Prerequisites
