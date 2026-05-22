@@ -10,17 +10,7 @@ from typing import List, Optional
 from pathlib import Path
 
 
-# Vocabulary from training data
-VOCAB = """ !"#&'()*+,-./0123456789:;?ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"""
-CTC_BLANK = 0
-
-# Character mappings
-char_to_int = {char: i + 1 for i, char in enumerate(VOCAB)}
-int_to_char = {i + 1: char for i, char in enumerate(VOCAB)}
-
-# Image dimensions (must match training)
-IMG_HEIGHT = 64
-IMG_WIDTH = 512
+from .constants import VOCAB, CTC_BLANK, char_to_int, int_to_char, IMG_HEIGHT, IMG_WIDTH
 
 
 class CRNN(nn.Module):
@@ -114,19 +104,19 @@ def ctc_decode(log_probs: torch.Tensor) -> List[str]:
     
     decoded_texts = []
     for pred in preds:
-        # Convert indices to characters
-        s = ''.join([int_to_char.get(c.item(), '') for c in pred if c.item() != CTC_BLANK])
+        # 1. Collapse consecutive identical tokens first (including blanks)
+        collapsed = []
+        prev = None
+        for val in pred:
+            val_item = val.item()
+            if val_item != prev:
+                collapsed.append(val_item)
+                prev = val_item
+                
+        # 2. Filter out the CTC blank tokens and map to characters
+        chars = [int_to_char.get(c, '') for c in collapsed if c != CTC_BLANK]
+        decoded_texts.append(''.join(chars))
         
-        # Remove consecutive duplicates (CTC collapse)
-        dedup_s = ""
-        if s:
-            dedup_s = s[0]
-            for char in s[1:]:
-                if char != dedup_s[-1]:
-                    dedup_s += char
-        
-        decoded_texts.append(dedup_s)
-    
     return decoded_texts
 
 

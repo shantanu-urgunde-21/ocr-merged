@@ -1,6 +1,6 @@
 """Preprocessing Package"""
 
-from .preprocessing import (
+from .layout_segmenter import (
     load_image,
     deskew,
     get_lines,
@@ -9,7 +9,7 @@ from .preprocessing import (
     ImagePreprocessor,
 )
 
-from .crnn_preprocessing import (
+from .image_normalizer import (
     CRNNImagePreprocessor,
     inference_transform,
     train_transform,

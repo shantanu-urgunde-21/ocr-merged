@@ -1,16 +1,17 @@
-"""
-Processing routes for OCR service
-Core logic for handling different model and preprocessing combinations
-"""
-
 import io
 from pathlib import Path
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, Any
 import numpy as np
-import torch
 from PIL import Image
 
-from models import ModelRegistry, predict_text, VOCAB
+try:
+    import torch
+    from models import predict_text
+    HAS_TORCH = True
+except ImportError:
+    HAS_TORCH = False
+
+from models import ModelRegistry, VOCAB
 from preprocessing import ImagePreprocessor, CRNNImagePreprocessor
 
 from .schemas import FileResult, LineResult, OCRResponse
@@ -22,16 +23,22 @@ class OCRProcessor:
     Handles model selection, preprocessing, and result formatting.
     """
     
-    def __init__(self, crnn_model_path: str, device: Optional[torch.device] = None):
+    def __init__(self, crnn_model_path: str, device: Optional[Any] = None):
         """
         Initialize processor with model paths.
         
         Args:
-            crnn_model_path: Path to CRNN .pth checkpoint file
-            device: Torch device (auto-detected if None)
+            crnn_model_path: Path to CRNN checkpoint file
+            device: Custom device (auto-detected if None)
         """
         self.crnn_model_path = crnn_model_path
-        self.device = device or torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        if device is None:
+            if HAS_TORCH:
+                self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+            else:
+                self.device = "cpu"
+        else:
+            self.device = device
         self.image_preprocessor = ImagePreprocessor()
         self.crnn_preprocessor = CRNNImagePreprocessor()
     
@@ -114,6 +121,8 @@ class OCRProcessor:
         
         if model_type == "crnn":
             text_lines = self._predict_crnn_lines(line_images)
+        elif model_type == "crnn_onnx":
+            text_lines = self._predict_onnx_lines(line_images)
         elif model_type == "tesseract":
             text_lines = self._predict_tesseract_lines(line_images)
         else:
@@ -151,6 +160,16 @@ class OCRProcessor:
             text = predict_text(model, tensor, self.device)
             return [text] if text else []
         
+        elif model_type == "crnn_onnx":
+            numpy_arr = self.crnn_preprocessor.from_pil_numpy(image)
+            model = ModelRegistry.get_model(
+                "crnn_onnx",
+                device=self.device,
+                model_path=self.crnn_model_path
+            )
+            text = model.predict(numpy_arr)
+            return [text] if text else []
+        
         elif model_type == "tesseract":
             # Convert to numpy for Tesseract
             img_array = np.array(image.convert("L"))
@@ -186,6 +205,35 @@ class OCRProcessor:
                     text_lines.append(text)
             except Exception as e:
                 print(f"Error processing line: {str(e)}")
+                continue
+        
+        return text_lines
+    
+    def _predict_onnx_lines(self, line_images: List[np.ndarray]) -> List[str]:
+        """
+        Run ONNX CRNN inference on preprocessed line images.
+        
+        Args:
+            line_images: List of grayscale line images
+            
+        Returns:
+            List of recognized text strings
+        """
+        model = ModelRegistry.get_model(
+            "crnn_onnx",
+            device=self.device,
+            model_path=self.crnn_model_path
+        )
+        
+        text_lines = []
+        for line_img in line_images:
+            try:
+                numpy_arr = self.crnn_preprocessor.from_numpy_numpy(line_img)
+                text = model.predict(numpy_arr)
+                if text:  # Only append non-empty results
+                    text_lines.append(text)
+            except Exception as e:
+                print(f"Error processing ONNX line: {str(e)}")
                 continue
         
         return text_lines

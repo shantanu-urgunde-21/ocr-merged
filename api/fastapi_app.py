@@ -5,9 +5,14 @@ Unified OCR API supporting CRNN and Tesseract models
 
 from pathlib import Path
 from typing import List, Optional, Annotated
-import torch
 from fastapi import FastAPI, File, UploadFile, HTTPException, Query
 from fastapi.responses import JSONResponse
+
+try:
+    import torch
+    DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+except ImportError:
+    DEVICE = "cpu"
 
 from models import ModelRegistry
 from .routes import OCRProcessor, process_ocr_request
@@ -28,8 +33,15 @@ app = FastAPI(
 
 # Global processor instance (lazy loaded)
 processor: Optional[OCRProcessor] = None
-CRNN_MODEL_PATH = "best_model_weights/handwriting_recognizer_best.pth"
-DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+# Dynamically resolve weight path depending on local execution vs docker environment
+CRNN_MODEL_PATH = (
+    "model_weights/handwriting_recognizer_best.pth"
+    if Path("model_weights/handwriting_recognizer_best.pth").exists()
+    else "best_model_weights/handwriting_recognizer_best.pth"
+)
+
+
 
 
 def get_processor() -> OCRProcessor:
@@ -49,12 +61,19 @@ async def startup_event():
     print(f"Device: {DEVICE}")
     print(f"CRNN Model Path: {CRNN_MODEL_PATH}")
     
-    # Verify CRNN model exists
+    # Verify PyTorch CRNN model exists
     if not Path(CRNN_MODEL_PATH).exists():
-        print(f"⚠️  Warning: CRNN model not found at {CRNN_MODEL_PATH}")
-        print("   CRNN inference will fail until model is available")
+        print(f"⚠️  Warning: PyTorch CRNN model (.pth) not found at {CRNN_MODEL_PATH}")
     else:
-        print(f"✓ CRNN model found")
+        print(f"✓ PyTorch CRNN model (.pth) found")
+        
+    # Verify ONNX model exists
+    onnx_path = CRNN_MODEL_PATH.replace(".pth", ".onnx")
+    if not Path(onnx_path).exists():
+        print(f"⚠️  Warning: CRNN ONNX model (.onnx) not found at {onnx_path}")
+        print("   ONNX inference will fail until ONNX model is compiled")
+    else:
+        print(f"✓ CRNN ONNX model (.onnx) found")
     
     # Verify Tesseract (optional)
     try:
@@ -163,10 +182,20 @@ async def _run_ocr(
         raise HTTPException(
             status_code=503,
             detail=(
-                f"CRNN weights not found. Add handwriting_recognizer_best.pth under best_model_weights/ "
+                f"CRNN weights not found. Add handwriting_recognizer_best.pth under model_weights/ "
                 f"(expected path: {CRNN_MODEL_PATH}). Tesseract does not require this file."
             ),
         )
+    elif model_type == "crnn_onnx":
+        onnx_path = CRNN_MODEL_PATH.replace(".pth", ".onnx")
+        if not Path(onnx_path).exists():
+            raise HTTPException(
+                status_code=503,
+                detail=(
+                    f"CRNN ONNX model file not found. Run python -m scripts.export_onnx to generate it "
+                    f"(expected path: {onnx_path})."
+                ),
+            )
 
     try:
         proc = get_processor()
@@ -186,7 +215,7 @@ async def _run_ocr(
 
 @app.post("/ocr", response_model=OCRResponse)
 async def process_ocr(
-    model_type: str = Query("crnn", description="'crnn' for handwritten text (default) or 'tesseract' for general text"),
+    model_type: str = Query("crnn_onnx", description="'crnn_onnx' for C++ optimized ONNX handwriting recognition (default), 'crnn' for PyTorch, or 'tesseract' for general text"),
     preprocessing_mode: str = Query("full", description="'full' for deskew + line segmentation or 'single_line' for direct inference"),
     files: Annotated[List[UploadFile], File(description="Select one or more image files. In Swagger, click 'Add item' then use the file picker.")] = [],
 ):
@@ -201,7 +230,7 @@ async def process_ocr(
 
 @app.post("/ocr/single", response_model=OCRResponse)
 async def process_ocr_single(
-    model_type: str = Query("crnn", description="'crnn' or 'tesseract'"),
+    model_type: str = Query("crnn_onnx", description="'crnn_onnx' (default), 'crnn', or 'tesseract'"),
     preprocessing_mode: str = Query("full", description="'full' or 'single_line'"),
     file: UploadFile = File(..., description="One image file"),
 ):

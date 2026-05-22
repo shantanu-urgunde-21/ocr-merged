@@ -1,5 +1,5 @@
 """
-Generic Image Preprocessing Module
+Generic Image Preprocessing Module - Layout Segmenter
 Handles: loading, deskewing, line segmentation, line splitting, basic preparation
 Used for full-page OCR workflow
 """
